@@ -895,7 +895,7 @@ Max 4 bullets. 1-2 sentences each. Plain text only."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MOCK DATA — bundled CSV sitting next to app.py
 # ─────────────────────────────────────────────────────────────────────────────
-MOCK_CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "englishbhashi_feedback_100.csv")
+MOCK_CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_feedback_100.csv")
 
 @st.cache_data
 def load_mock_data():
@@ -1140,7 +1140,7 @@ if show_landing:
 if use_mock:
     df_raw = load_mock_data()
     if df_raw is None:
-        st.error("Mock dataset not found. Make sure `englishbhashi_feedback_100.csv` is in the same folder as `app.py`.")
+        st.error("Mock dataset not found.")
         st.stop()
     _fname = "🧪 Mock Dataset · EdTech Feedback (100 entries)"
 else:

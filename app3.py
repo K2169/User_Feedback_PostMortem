@@ -1084,7 +1084,7 @@ with tabs[9]:
 
     # Markdown PM report
     report = [
-        "# User Feedback Postmortem — EnglishBhashi\n\n",
+        "# User Feedback Postmortem \n\n",
         f"**Entries Analysed:** {total_n}  \n",
         f"**Avg Sentiment:** {avg_sent}/10  \n",
         f"**Avg Churn Probability:** {avg_churn}%  \n",

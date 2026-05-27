@@ -84,7 +84,7 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 ```
 feedback-postmortem/
 ├── app.py                            # Main Streamlit application
-├── englishbhashi\_feedback\_100.csv    # Bundled mock dataset (100 entries)
+├── user\_feedback\_100.csv    # Bundled mock dataset (100 entries)
 ├── requirements.txt                  # Python dependencies
 ├── .env                              # API key (not committed to git)
 ├── .gitignore                        # Ignores .env and other local files
