@@ -1,0 +1,39 @@
+# Environment
+.env
+.env.local
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Outputs / exports
+postmortem_enriched.csv
+churn_watchlist.csv
+bugs_report.csv
+postmortem_report.md
