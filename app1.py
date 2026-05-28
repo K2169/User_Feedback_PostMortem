@@ -11,12 +11,12 @@ from groq import Groq
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 load_dotenv()
-api_key = (
-    st.secrets.get("GROQ_API_KEY")
-    or os.getenv("GROQ_API_KEY")
-    or ""
-)
-client = Groq(api_key=api_key)
+# Reads from Streamlit Cloud secrets in production, .env locally
+_api_key = (
+    st.secrets.get("GROQ_API_KEY", None)
+    if hasattr(st, "secrets") else None
+) or os.getenv("GROQ_API_KEY") or ""
+client = Groq(api_key=_api_key)
 
 st.set_page_config(
     page_title="Postmortem · Feedback Intelligence",
@@ -895,14 +895,19 @@ Max 4 bullets. 1-2 sentences each. Plain text only."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MOCK DATA — bundled CSV sitting next to app.py
 # ─────────────────────────────────────────────────────────────────────────────
-MOCK_CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_feedback_100.csv")
-
 @st.cache_data
 def load_mock_data():
-    if os.path.exists(MOCK_CSV_PATH):
-        df = pd.read_csv(MOCK_CSV_PATH)
-        df.columns = df.columns.str.strip()
-        return df
+    """Try multiple path strategies to find the CSV — works locally and on Streamlit Cloud."""
+    candidates = [
+        "user_feedback_100.csv",                                              # same dir, relative
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_feedback_100.csv"),  # absolute
+        os.path.join(os.getcwd(), "user_feedback_100.csv"),                   # cwd
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            df = pd.read_csv(path)
+            df.columns = df.columns.str.strip()
+            return df
     return None
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1140,7 +1145,7 @@ if show_landing:
 if use_mock:
     df_raw = load_mock_data()
     if df_raw is None:
-        st.error("Mock dataset not found.")
+        st.error(f"Mock dataset not found. Looked in: {os.getcwd()} — make sure `user_feedback_100.csv` is committed to your GitHub repo root.")
         st.stop()
     _fname = "🧪 Mock Dataset · EdTech Feedback (100 entries)"
 else:
