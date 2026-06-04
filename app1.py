@@ -728,6 +728,27 @@ def chart_wrap(fig):
 # ─────────────────────────────────────────────────────────────────────────────
 # AI FUNCTIONS
 # ─────────────────────────────────────────────────────────────────────────────
+
+def col(df, name, fallback=""):
+    """
+    Fuzzy column finder — matches regardless of case, spaces, or special chars.
+    Returns the series if found, or a series of fallback values if not.
+    """
+    # exact match first
+    if name in df.columns:
+        return df[name]
+    # case-insensitive + strip
+    name_clean = name.lower().strip().replace(" ","").replace("_","").replace(":","")
+    for c in df.columns:
+        c_clean = c.lower().strip().replace(" ","").replace("_","").replace(":","")
+        if c_clean == name_clean:
+            return df[c]
+    # partial match
+    for c in df.columns:
+        if name_clean in c.lower().replace(" ","").replace("_",""):
+            return df[c]
+    return pd.Series([fallback] * len(df))
+
 def tag_row(row):
     prompt = f"""You are a senior product analyst for a mobile app startup.
 
@@ -781,10 +802,10 @@ def gen_exec_summary(df, tagged):
     avg_sent  = round(sum(t.get("sentiment_score",5) for t in tagged)/max(len(tagged),1),1)
     avg_churn = round(sum(t.get("churn_probability",30) for t in tagged)/max(len(tagged),1))
     critical  = sum(1 for t in tagged if t.get("impact") == "Critical")
-    top_dropoff   = df["Drop-off Point"].value_counts().head(2).to_dict() if "Drop-off Point" in df.columns else {}
-    top_complaint = df["Feature Complained About"].value_counts().head(3).to_dict() if "Feature Complained About" in df.columns else {}
-    competitors   = df["Competitor Mentioned"].value_counts().to_dict() if "Competitor Mentioned" in df.columns else {}
-    sample_fb     = df["Raw Feedback"].dropna().sample(min(10,len(df))).tolist()
+    top_dropoff   = col(df,"Drop-off Point").value_counts().head(2).to_dict() if "Drop-off Point" in df.columns else {}
+    top_complaint = col(df,"Feature Complained About").value_counts().head(3).to_dict() if "Feature Complained About" in df.columns else {}
+    competitors   = col(df,"Competitor Mentioned").value_counts().to_dict() if "Competitor Mentioned" in df.columns else {}
+    sample_fb     = col(df,"Raw Feedback").dropna().sample(min(10,len(df))).tolist()
     prompt = f"""You are a senior PM writing an executive postmortem for a startup founding team.
 
 Data:
@@ -809,7 +830,7 @@ Return plain text, 5 bullets only. No headers, no preamble."""
         return f"Summary unavailable: {e}"
 
 def gen_features(df):
-    feedbacks = df["Raw Feedback"].dropna().tolist()
+    feedbacks = col(df,"Raw Feedback").dropna().tolist()
     prompt = f"""You are a PM analysing feature requests from user feedback for a mobile app.
 
 Analyse these {min(len(feedbacks),40)} feedback entries and surface the top 6 most impactful improvements requested.
@@ -861,7 +882,7 @@ Max 5 bullets. Be specific — use actual persona names. 2 sentences max per bul
         return "Persona analysis unavailable."
 
 def gen_competitors(df):
-    if "Competitor Mentioned" not in df.columns:
+    if col(df,"Competitor Mentioned").eq("").all():
         return ""
     comp_data = []
     for _, row in df.iterrows():
@@ -1153,7 +1174,49 @@ else:
     df_raw.columns = df_raw.columns.str.strip()
     _fname = uploaded.name.replace(".csv","").replace("_"," ").title()
 
-df = df_raw.copy()
+# Normalise all column names — strip whitespace, fix common variants
+def normalise_columns(df):
+    rename_map = {}
+    canonical = {
+        "rawfeedback":           "Raw Feedback",
+        "feedbackcategory":      "Feedback Category",
+        "sentiment":             "Sentiment",
+        "personatype":           "Persona Type",
+        "age":                   "Age",
+        "englishlevel":          "English Level",
+        "nooflessionsdone":      "No. of Lessons Done",
+        "nooflessionsdone":      "No. of Lessons Done",
+        "lessonsdone":           "No. of Lessons Done",
+        "streaks":               "Streaks",
+        "streak":                "Streaks",
+        "calldate":              "Call Date",
+        "callduration":          "Call Duration (min)",
+        "dropoffpoint":          "Drop-off Point",
+        "dropoff":               "Drop-off Point",
+        "frictionpaywall":       "Friction: Paywall",
+        "frictionux":            "Friction: UX",
+        "frictioncontent":       "Friction: Content",
+        "frictiontechbug":       "Friction: Tech Bug",
+        "mostusedfeature":       "Most Used Feature",
+        "leastusedfeature":      "Least Used Feature",
+        "mostlikedfeature":      "Most Liked Feature",
+        "featurecomplainedabout":"Feature Complained About",
+        "competitormentioned":   "Competitor Mentioned",
+        "actiontaken":           "Action Taken",
+        "followupneeded":        "Follow-up Needed",
+        "followupstatus":        "Follow-up Status",
+        "assignedto":            "Assigned To",
+        "name":                  "Name",
+        "userid":                "User ID",
+        "gender":                "Gender",
+    }
+    for c in df.columns:
+        key = c.lower().strip().replace(" ","").replace("_","").replace(":","").replace(".","").replace("-","").replace("/","").replace("(","").replace(")","")
+        if key in canonical:
+            rename_map[c] = canonical[key]
+    return df.rename(columns=rename_map)
+
+df = normalise_columns(df_raw.copy())
 
 if f_dropoff and "Drop-off Point" in df.columns:
     df = df[df["Drop-off Point"].isin(f_dropoff)]
